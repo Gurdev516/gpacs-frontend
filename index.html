@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GPacs</title>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script>
+    //// React imports (via CDN)
+const { useState } = React;
+
+// Sample studies and users
+const SAMPLE_STUDIES = [
+  { id: 1001, date: '2025-07-01', type: 'TCD', status: 'New',         patient: 'John Doe',   dob: '1970-05-12', provider: 'Dr. A', imageCount: 15, report: true,  reportContent: 'Initial report text...' },
+  { id: 1002, date: '2025-06-28', type: 'TCD', status: 'Preliminary', patient: 'Jane Smith', dob: '1980-09-22', provider: 'Dr. B', imageCount: 12, report: true,  reportContent: '' },
+  { id: 1003, date: '2025-06-20', type: 'TCD', status: 'Final',       patient: 'Bob Lee',    dob: '1990-02-14', provider: 'Dr. C', imageCount: 15, report: false, reportContent: '' }
+];
+const INITIAL_USERS = [
+  { username: 'admin', role: 'technologist', password: 'Gurdev1' },
+  { username: 'phys1', role: 'physician',    password: 'Gurdev2' }
+];
+
+function App() {
+  // Auth state
+  const [loggedIn, setLoggedIn]   = useState(false);
+  const [role, setRole]           = useState('technologist');
+  const [username, setUsername]   = useState('');
+  const [password, setPassword]   = useState('');
+  const [error, setError]         = useState('');
+
+  // Data state
+  const [studies, setStudies]     = useState(SAMPLE_STUDIES);
+  const [search, setSearch]       = useState({ patient:'', dob:'', provider:'', examType:'' });
+
+  // Modal state
+  const [modal, setModal]         = useState(null);
+  const [activeTab, setActiveTab] = useState('info');
+  const [draftReport, setDraftReport] = useState('');
+
+  // Login handler
+  const handleLogin = () => {
+    const user = INITIAL_USERS.find(u => u.username===username && u.role===role && u.password===password);
+    if (user) { setError(''); setLoggedIn(true); }
+    else { setError('Invalid credentials'); }
+  };
+  const handleLogout = () => { setLoggedIn(false); setModal(null); };
+
+  // Open modal
+  const openModal = (type, study) => {
+    setActiveTab('info');
+    setModal({ type, study });
+    if (type === 'report') setDraftReport(study.reportContent || '');
+  };
+  const closeModal = () => setModal(null);
+
+  // Filtered studies
+  const filtered = studies.filter(s =>
+    (!search.patient    || s.patient.toLowerCase().includes(search.patient.toLowerCase())) &&
+    (!search.dob        || s.dob === search.dob) &&
+    (!search.provider   || s.provider.toLowerCase().includes(search.provider.toLowerCase())) &&
+    (!search.examType   || s.type.toLowerCase().includes(search.examType.toLowerCase()))
+  );
+
+  // Login screen
+  if (!loggedIn) {
+    return (
+      <div style={{
+        display: 'flex', minHeight: '100vh',
+        background: 'url(https://jpreetcom.wordpress.com/wp-content/uploads/2025/07/zkf1b07cgbs.webp) center/cover',
+        alignItems: 'center', justifyContent: 'center'
+      }}>
+        <div style={{ flex:1, textAlign:'center' }}>
+          <img
+            src="https://jpreetcom.wordpress.com/wp-content/uploads/2025/07/chatgpt-image-jul-26-2025-05_00_46-am.png"
+            alt="GPacs Logo" style={{ maxWidth:250 }}/>
+          <div style={{ color:'#fff', fontSize:12, marginTop:8 }}>HIPAA Compliant</div>
+        </div>
+        <div style={{ width:320, background:'rgba(166,174,191,0.8)', padding:20, borderRadius:8 }}>
+          <h2 style={{ textAlign:'center', color:'#fff' }}>GPacs Login</h2>
+          <div style={{ fontSize:12, color:'#fff', marginBottom:12, textAlign:'center' }}>
+            Property of Family Medcare (AMAR Solutions Inc.)<br/>
+            940 State Route 17k, Montgomery NY 12549 | 845-457-2900
+          </div>
+          <label style={{ color:'#fff' }}>
+            Role:&nbsp;
+            <select value={role} onChange={e=>setRole(e.target.value)}>
+              <option value="technologist">Technologist</option>
+              <option value="physician">Physician</option>
+            </select>
+          </label>
+          <input
+            placeholder="Username"
+            value={username}
+            onChange={e=>setUsername(e.target.value)}
+            style={{ width:'100%', margin:'10px 0', padding:8 }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e=>setPassword(e.target.value)}
+            style={{ width:'100%', padding:8 }}
+          />
+          {error && <div style={{ color:'yellow', textAlign:'center', margin:'10px 0' }}>{error}</div>}
+          <button
+            onClick={handleLogin}
+            style={{ width:'100%', padding:10, background:'#fff', border:'none', borderRadius:4 }}
+          >Login</button>
+          <div style={{ fontSize:10, color:'#eee', marginTop:16, textAlign:'center' }}>
+            Intended for use by trained medical professionals for secure transmission, storage, presentation of medical images and diagnostic results.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main UI
+  return (
+    <div style={{ background:'rgb(197,211,232)', minHeight:'100vh', padding:20, fontFamily:'Arial' }}>
+      {/* Header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+        <img
+          src="https://jpreetcom.wordpress.com/wp-content/uploads/2025/07/chatgpt-image-jul-26-2025-05_00_46-am.png"
+          alt="GPacs Logo" style={{ maxWidth:200 }}/>
+        <button onClick={handleLogout}>Logout ({role})</button>
+      </div>
+
+      {/* Search & Upload */}
+      <div style={{ display:'flex', gap:10, marginBottom:20 }}>
+        <input
+          placeholder="Patient Name"
+          value={search.patient}
+          onChange={e=>setSearch({...search,patient:e.target.value})}
+        />
+        <input
+          placeholder="DOB (YYYY-MM-DD)"
+          value={search.dob}
+          onChange={e=>setSearch({...search,dob:e.target.value})}
+        />
+        <input
+          placeholder="Provider"
+          value={search.provider}
+          onChange={e=>setSearch({...search,provider:e.target.value})}
+        />
+        <input
+          placeholder="Exam Type"
+          value={search.examType}
+          onChange={e=>setSearch({...search,examType:e.target.value})}
+        />
+        <button>Search</button>
+        <button onClick={()=>setSearch({patient:'',dob:'',provider:'',examType:''})}>Clear</button>
+        <button onClick={()=>openModal('upload')}>Upload New Exam</button>
+      </div>
+
+      {/* Studies Table */}
+      <table style={{ width:'100%', borderCollapse:'collapse' }}>
+        <thead style={{ background:'rgb(166,174,191)' }}>
+          <tr>
+            <th style={{ padding:6 }}>ID</th>
+            <th style={{ padding:6 }}>Date</th>
+            <th style={{ padding:6 }}>Patient</th>
+            <th style={{ padding:6 }}>DOB</th>
+            <th style={{ padding:6 }}>Provider</th>
+            <th style={{ padding:6 }}>Type</th>
+            <th style={{ padding:6 }}>Status</th>
+            <th style={{ padding:6 }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(s => (
+            <tr key={s.id}>
+              <td style={{ padding:6 }}>{s.id}</td>
+              <td style={{ padding:6 }}>{s.date}</td>
+              <td style={{ padding:6 }}>{s.patient}</td>
+              <td style={{ padding:6 }}>{s.dob}</td>
+              <td style={{ padding:6 }}>{s.provider}</td>
+              <td style={{ padding:6 }}>{s.type}</td>
+              <td style={{ padding:6 }}>{s.status}</td>
+              <td style={{ padding:6 }}>
+                <button onClick={() => openModal('properties', s)}>🔍</button>
+                {s.report && <button onClick={() => openModal('report', s)} style={{ marginLeft:8 }}>📄</button>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Properties Modal */}
+      {modal && modal.type === 'properties' && (
+        <div style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', width:'80%', maxHeight:'90%', overflow:'auto', borderRadius:4, padding:20, position:'relative' }}>
+            <button onClick={closeModal} style={{ position:'absolute', top:10, right:10 }}>✕</button>
+            <h2>Study Properties - {modal.study.id}</h2>
+            <div style={{ display:'flex', borderBottom:'1px solid #ccc', marginBottom:10 }}>
+              {['Info','Attachments','Access Log','Custom Fields'].map(tab => (
+                <button key={tab}
+                  onClick={() => setActiveTab(tab.toLowerCase().replace(' ', '_'))}
+                  style={{
+                    padding:10,
+                    marginRight:5,
+                    background: activeTab === tab.toLowerCase().replace(' ', '_') ? '#eee' : 'transparent',
+                    border:'none',
+                    cursor:'pointer'
+                  }}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+            <div>
+              {activeTab === 'info' && (
+                <table>
+                  <tbody>
+                    <tr><td><strong>Study ID</strong></td><td>{modal.study.id}</td></tr>
+                    <tr><td><strong>Date</strong></td><td>{modal.study.date}</td></tr>
+                    <tr><td><strong>Patient</strong></td><td>{modal.study.patient}</td></tr>
+                    <tr><td><strong>DOB</strong></td><td>{modal.study.dob}</td></tr>
+                    <tr><td><strong>Provider</strong></td><td>{modal.study.provider}</td></tr>
+                    <tr><td><strong>Images</strong></td><td>{modal.study.imageCount}</td></tr>
+                  </tbody>
+                </table>
+              )}
+              {activeTab === 'attachments' && (
+                <div>
+                  <button onClick={() => alert('Attach file placeholder')}>+ Attach File</button>
+                  <ul>
+                    <li>TCD Report.pdf</li>
+                    <li>Super Bill.pdf</li>
+                  </ul>
+                </div>
+              )}
+              {activeTab === 'access_log' && (
+                <table>
+                  <thead><tr><th>Date/time</th><th>User</th><th>Action</th><th>Result</th><th>IP</th></tr></thead>
+                  <tbody>
+                    <tr><td>2025-07-07 06:47</td><td>admin</td><td>Edit study</td><td>Permitted</td><td>216.131.104.185</td></tr>
+                    <tr><td>2025-06-24 12:56</td><td>phys1</td><td>View report</td><td>Permitted</td><td>172.56.164.169</td></tr>
+                  </tbody>
+                </table>
+              )}
+              {activeTab === 'custom_fields' && (
+                <table>
+                  <thead><tr><th>Name</th><th>Value</th></tr></thead>
+                  <tbody>
+                    <tr><td>Insurance</td><td>OXFORD (LBTY)</td></tr>
+                    <tr><td>Practice</td><td>Read Only</td></tr>
+                    <tr><td>Rendering Provider</td><td>UNASSIGNED</td></tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div style={{ textAlign:'right', marginTop:10 }}>
+              <button onClick={closeModal} style={{ marginRight:10 }}>Cancel</button>
+              <button onClick={() => alert('Apply changes')}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {modal && modal.type === 'report' && (
+        <div style={{ position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', width:'60%', padding:20, borderRadius:4, maxHeight:'90%', overflow:'auto' }}>
+            <h2>Edit Report for Study {modal.study.id}</h2>
+            <textarea
+              style={{ width:'100%', height: '60vh', padding:10 }}
+              value={draftReport}
+              onChange={e => setDraftReport(e.target.value)}
+            />
+            <div style={{ marginTop:10, textAlign:'right' }}>
+              <button onClick={closeModal} style={{ marginRight:10 }}>Cancel</button>
+              <button onClick={() => {
+                setStudies(studies.map(s => s.id === modal.study.id ? { ...s, reportContent: draftReport, report: true } : s));
+                closeModal();
+              }}>Save Report</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Render App
+ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
