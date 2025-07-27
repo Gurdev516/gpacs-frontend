@@ -1,0 +1,27 @@
+name: Build and Release GPacs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create tarball
+        run: |
+          mkdir -p build
+          cp index.html build/
+          tar -czf build.tar.gz build
+
+      - name: Release Build
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: latest
+          name: Latest Build
+          files: build.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
